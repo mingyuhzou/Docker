@@ -10,11 +10,15 @@
 
 # Docker
 
-因为虚拟机本质上是一台电脑，而每台电脑都需要操作系统，操作系统的存在会占用大量内存同时启动会比较缓慢，对于部署应用程序的需求使用虚拟机过于浪费。
+开发、测试和运维团队在各自的环境中工作时，通常会遇到开发环境不一致的问题，搭建环境是一项很费时费力的工作，虽然虚拟机可以直接clone一份环境给其他阶段的人员，但是虚拟机本质上是一台电脑，而每台电脑都需要操作系统，操作系统的存在会占用大量内存同时启动会比较缓慢，对于部署应用程序的需求使用虚拟机过于浪费。
 
-为了克服虚拟机的缺点(还需利用虚拟机独立的特性)，出现了容器技术——只隔离应用程序运行时的环境，容器之间可以共享一个操作系统。容器更加轻量级且占用资源更少。
+因此出现了容器技术，容器技术通过linux实现了每个容器之间的隔离，容器在宿主机的操作系统上运行，共享宿主机的内核和操作系统，容器只会打包应用以及其依赖项，不会打包整个操作系统，记住宿主机的操作系统的虚化技术提供所需的操作系统环境。相比于虚拟机容器更快更小，性能更好。
 
-docker是容器技术的实现
+
+
+docker是使用了容器技术的体现
+
+
 
 docker中有镜像和容器
 
@@ -221,4 +225,64 @@ docker rm 71357ee776ae
 ```python
 docker ps
 ```
+
+
+
+进入容器内部，container_name_or_id通过docker ps 查看
+
+```python
+docker exec -it <container_name_or_id> bash
+```
+
+容器没有安装 `bash`，你可以使用 `sh`
+
+```python
+docker exec -it <container_name_or_id> sh
+```
+
+
+
+# 编排
+
+ docker-compose用于一次性启动多个容器，注意这是一项命令而不是将多个镜像整合为一个，需要拉取镜像后自行设置。
+
+
+
+应用依赖于多个容器，可以使用docker-compose**一次性启动**，在根目录下配置docker-compose.yml文件
+
+```python
+services:
+  flasky:
+    build: .
+    ports:
+      - "8000:5000"
+    env_file: .env
+    depends_on:
+      - dbserver
+    restart: always
+  
+  dbserver:
+    image: "mysql:latest"
+    env_file: .env_mysql
+    restart: always
+```
+
++ services下指定服务名(容器名)
++ build . 基于当前目录向下的dockfile构建flask镜像，镜像名默认为目录名_flasky
++ image 基于的镜像的位置
++ env_file 指定环境变量的配置
++ restart: always 如果容器崩溃，那么docker总会重启它
++ depends_on 服指定服务之间的依赖关系，确保启动顺序
+
+
+
+
+
+```python
+docker-compose up --build
+```
+
++ --build会强制在启动容器之前构建build指定的镜像，保证了flask项目的更改生效
+
+
 
